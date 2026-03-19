@@ -150,7 +150,7 @@ class OpenRouterClient(ModelClient):
                             f"{self.async_client['base_url']}/chat/completions",
                             headers=headers,
                             json=api_kwargs,
-                            timeout=60
+                            timeout=180
                         ) as response:
                             if response.status != 200:
                                 error_text = await response.text()
