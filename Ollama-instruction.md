@@ -48,7 +48,8 @@ Create a `.env` file in the project root:
 # No need for API keys when using Ollama locally
 PORT=8001
 # Optionally, provide OLLAMA_HOST if Ollama is not local
-OLLAMA_HOST=your_ollama_host # (default: http://localhost:11434)
+OLLAMA_HOST=your_ollama_host # (default: http://localhost:11434, if running in docker container: http://host.docker.internal:11434
+)
 ```
 
 Configure the Local Embedder for Ollama:
