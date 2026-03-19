@@ -60,7 +60,7 @@ echo "AZURE_OPENAI_API_KEY=your_azure_openai_api_key" >> .env
 echo "AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint" >> .env
 echo "AZURE_OPENAI_VERSION=your_azure_openai_version" >> .env
 # Run with Docker Compose
-docker-compose up
+docker compose up
 ```
 
 For detailed instructions on using DeepWiki with Ollama and Docker, see [Ollama Instructions](Ollama-instruction.md).

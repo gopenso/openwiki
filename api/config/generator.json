@@ -1,5 +1,5 @@
 {
-  "default_provider": "google",
+  "default_provider": "openrouter",
   "providers": {
     "dashscope": {
       "default_model": "qwen-plus",
@@ -74,40 +74,14 @@
       }
     },
     "openrouter": {
-      "default_model": "openai/gpt-5-nano",
+      "default_model": "openai/gpt-oss-120b",
       "supportsCustomModel": true,
       "models": {
-        "openai/gpt-5-nano": {
+        "openai/gpt-oss-120b": {
           "temperature": 0.7,
           "top_p": 0.8
         },
-        "openai/gpt-4o": {
-          "temperature": 0.7,
-          "top_p": 0.8
-        },
-        "deepseek/deepseek-r1": {
-          "temperature": 0.7,
-          "top_p": 0.8
-        },
-        "openai/gpt-4.1": {
-          "temperature": 0.7,
-          "top_p": 0.8
-        },
-        "openai/o1": {
-          "temperature": 0.7,
-          "top_p": 0.8
-        },
-        "openai/o3": {
-          "temperature": 1.0
-        },
-        "openai/o4-mini": {
-          "temperature": 1.0
-        },
-        "anthropic/claude-3.7-sonnet": {
-          "temperature": 0.7,
-          "top_p": 0.8
-        },
-        "anthropic/claude-3.5-sonnet": {
+        "moonshotai/kimi-k2-0905": {
           "temperature": 0.7,
           "top_p": 0.8
         }
@@ -196,4 +170,3 @@
     }
   }
 }
-
