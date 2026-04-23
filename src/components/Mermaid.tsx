@@ -179,8 +179,9 @@ interface MermaidProps {
 const FullScreenModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
+  onDownload: () => void; // Added onDownload prop
   children: React.ReactNode;
-}> = ({ isOpen, onClose, children }) => {
+}> = ({ isOpen, onClose, onDownload, children }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -228,7 +229,7 @@ const FullScreenModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-75 p-4">
       <div
         ref={modalRef}
         className="bg-[var(--card-bg)] rounded-lg shadow-custom max-w-5xl max-h-[90vh] w-full overflow-hidden flex flex-col card-japanese"
@@ -237,6 +238,20 @@ const FullScreenModal: React.FC<{
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
           <div className="font-medium text-[var(--foreground)] font-serif">図表表示</div>
           <div className="flex items-center gap-4">
+            {/* Download Button */}
+            <button
+              onClick={onDownload}
+              className="text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 p-2 rounded-md border border-[var(--border-color)] transition-colors flex items-center gap-2 text-sm"
+              aria-label="Download SVG"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              下載 SVG
+            </button>
+            <div className="w-px h-6 bg-[var(--border-color)] mx-1"></div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
@@ -249,7 +264,7 @@ const FullScreenModal: React.FC<{
                   <line x1="8" y1="11" x2="14" y2="11"></line>
                 </svg>
               </button>
-              <span className="text-sm text-[var(--muted)]">{Math.round(zoom * 100)}%</span>
+              <span className="text-sm text-[var(--muted)] w-12 text-center">{Math.round(zoom * 100)}%</span>
               <button
                 onClick={() => setZoom(Math.min(2, zoom + 0.1))}
                 className="text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 p-2 rounded-md border border-[var(--border-color)] transition-colors"
@@ -275,7 +290,7 @@ const FullScreenModal: React.FC<{
             </div>
             <button
               onClick={onClose}
-              className="text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 p-2 rounded-md border border-[var(--border-color)] transition-colors"
+              className="text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 p-2 rounded-md border border-[var(--border-color)] transition-colors ml-2"
               aria-label="Close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -315,6 +330,28 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, className = '', zoomingEnabled
     window.matchMedia &&
     window.matchMedia('(prefers-color-scheme: dark)').matches
   );
+
+  // Download SVG function
+  const handleDownloadSVG = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // 防止觸發全螢幕放大
+    }
+    if (!svg) return;
+
+    try {
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `mermaid-diagram-${new Date().toISOString().slice(0,10)}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download SVG', err);
+    }
+  };
 
   // Initialize pan-zoom functionality when SVG is rendered
   useEffect(() => {
@@ -420,12 +457,12 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, className = '', zoomingEnabled
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            図表レンダリングエラー
+            圖表渲染錯誤
           </div>
         </div>
         <div ref={mermaidRef} className="text-xs overflow-auto"></div>
         <div className="mt-3 text-xs text-[var(--muted)] font-serif">
-          図表に構文エラーがあり、レンダリングできません。
+          圖表中有語法錯誤，無法渲染。
         </div>
       </div>
     );
@@ -451,7 +488,7 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, className = '', zoomingEnabled
         className={`w-full max-w-full ${zoomingEnabled ? "h-[600px] p-4" : ""}`}
       >
         <div
-          className={`relative group ${zoomingEnabled ? "h-full rounded-lg border-2 border-black" : ""}`}
+          className={`relative group ${zoomingEnabled ? "h-full rounded-lg border-2 border-[var(--border-color)]" : ""}`}
         >
           <div
             className={`flex justify-center overflow-auto text-center my-2 cursor-pointer hover:shadow-md transition-shadow duration-200 rounded-md ${className} ${zoomingEnabled ? "h-full" : ""}`}
@@ -471,6 +508,19 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, className = '', zoomingEnabled
               <span>Click to zoom</span>
             </div>
           )}
+
+          {/* 新增：圖表右下角的下載按鈕 */}
+          <button
+            onClick={handleDownloadSVG}
+            className="absolute bottom-2 right-2 bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 p-2 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md z-10 flex items-center justify-center"
+            title="Download SVG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -478,6 +528,7 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, className = '', zoomingEnabled
         <FullScreenModal
           isOpen={isFullscreen}
           onClose={() => setIsFullscreen(false)}
+          onDownload={handleDownloadSVG} // 傳遞下載函數給 Modal
         >
           <div dangerouslySetInnerHTML={{ __html: svg }} />
         </FullScreenModal>
