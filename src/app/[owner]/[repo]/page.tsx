@@ -13,7 +13,7 @@ import { extractUrlDomain, extractUrlPath } from '@/utils/urlDecoder';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FaBitbucket, FaBookOpen, FaComments, FaDownload, FaExclamationTriangle, FaFileExport, FaFolder, FaGithub, FaGitlab, FaHome, FaSync, FaTimes } from 'react-icons/fa';
+import { FaBitbucket, FaBookOpen, FaComments, FaDownload, FaExclamationTriangle, FaEdit, FaFileExport, FaFolder, FaGithub, FaGitlab, FaHome, FaSave, FaSync, FaTimes } from 'react-icons/fa';
 // Define the WikiSection and WikiStructure types directly in this file
 // since the imported types don't have the sections and rootSections properties
 interface WikiSection {
@@ -235,6 +235,8 @@ export default function RepoWikiPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [originalMarkdown, setOriginalMarkdown] = useState<Record<string, string>>({});
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const [requestInProgress, setRequestInProgress] = useState(false);
   const [currentToken, setCurrentToken] = useState(token); // Track current effective token
   const [effectiveRepoInfo, setEffectiveRepoInfo] = useState(repoInfo); // Track effective repo info with cached data
@@ -2145,17 +2147,105 @@ IMPORTANT:
             <div id="wiki-content" className="w-full flex-grow p-6 lg:p-8 overflow-y-auto">
               {currentPageId && generatedPages[currentPageId] ? (
                 <div className="max-w-[900px] xl:max-w-[1000px] mx-auto">
-                  <h3 className="text-xl font-bold text-[var(--foreground)] mb-4 break-words font-serif">
-                    {generatedPages[currentPageId].title}
-                  </h3>
-
-
-
-                  <div className="prose prose-sm md:prose-base lg:prose-lg max-w-none">
-                    <Markdown
-                      content={generatedPages[currentPageId].content}
-                    />
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-[var(--foreground)] break-words font-serif">
+                      {generatedPages[currentPageId].title}
+                    </h3>
+                    <button
+                      onClick={async () => {
+                        if (editingPageId === currentPageId) {
+                          const updatedContent = editContent;
+                          setGeneratedPages(prev => ({
+                            ...prev,
+                            [currentPageId]: { ...prev[currentPageId], content: updatedContent }
+                          }));
+                          setEditingPageId(null);
+                          setEditContent('');
+                          try {
+                            await fetch(`/api/wiki/page`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                owner: effectiveRepoInfo.owner,
+                                repo: effectiveRepoInfo.repo,
+                                repo_type: effectiveRepoInfo.type,
+                                language: language,
+                                page_id: currentPageId,
+                                content: updatedContent,
+                              }),
+                            });
+                          } catch (err) {
+                            console.error('Failed to persist edit to server cache:', err);
+                          }
+                        } else {
+                          setEditContent(generatedPages[currentPageId].content);
+                          setEditingPageId(currentPageId);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--background)]/80 border border-[var(--border-color)] transition-colors shrink-0"
+                      title={editingPageId === currentPageId ? 'Save changes' : 'Edit raw content'}
+                    >
+                      {editingPageId === currentPageId ? (
+                        <><FaSave className="text-green-500" /> Save</>
+                      ) : (
+                        <><FaEdit /> Edit</>
+                      )}
+                    </button>
                   </div>
+
+                  {editingPageId === currentPageId ? (
+                    <div className="fixed inset-0 z-40 flex" style={{ margin: 0, padding: 0 }}>
+                      <div className="flex-1 flex flex-col bg-[var(--card-bg)]">
+                        <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--border-color)]">
+                          <span className="text-sm font-semibold text-[var(--foreground)] font-mono">
+                            Editing: {generatedPages[currentPageId].title}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              const updatedContent = editContent;
+                              setGeneratedPages(prev => ({
+                                ...prev,
+                                [currentPageId]: { ...prev[currentPageId], content: updatedContent }
+                              }));
+                              setEditingPageId(null);
+                              setEditContent('');
+                              try {
+                                await fetch(`/api/wiki/page`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    owner: effectiveRepoInfo.owner,
+                                    repo: effectiveRepoInfo.repo,
+                                    repo_type: effectiveRepoInfo.type,
+                                    language: language,
+                                    page_id: currentPageId,
+                                    content: updatedContent,
+                                  }),
+                                });
+                              } catch (err) {
+                                console.error('Failed to persist edit:', err);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors"
+                          >
+                            <FaSave /> Save & Close
+                          </button>
+                        </div>
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="flex-1 p-6 text-sm font-mono bg-[var(--background)] text-[var(--foreground)] border-0 resize-none focus:outline-none"
+                          spellCheck={false}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prose prose-sm md:prose-base lg:prose-lg max-w-none">
+                      <Markdown
+                        content={generatedPages[currentPageId].content}
+                      />
+                    </div>
+                  )}
 
                   {generatedPages[currentPageId].relatedPages.length > 0 && (
                     <div className="mt-8 pt-4 border-t border-[var(--border-color)]">

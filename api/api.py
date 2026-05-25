@@ -456,6 +456,17 @@ async def save_wiki_cache(data: WikiCacheRequest) -> bool:
         logger.error(f"Unexpected error saving wiki cache to {cache_path}: {e}", exc_info=True)
         return False
 
+class WikiPageUpdateRequest(BaseModel):
+    """
+    Model for updating a single wiki page in the cache.
+    """
+    owner: str
+    repo: str
+    repo_type: str
+    language: str
+    page_id: str
+    content: str
+
 # --- Wiki Cache API Endpoints ---
 
 @app.get("/api/wiki_cache", response_model=Optional[WikiCacheData])
@@ -536,6 +547,40 @@ async def delete_wiki_cache(
     else:
         logger.warning(f"Wiki cache not found, cannot delete: {cache_path}")
         raise HTTPException(status_code=404, detail="Wiki cache not found")
+
+@app.put("/api/wiki/page")
+async def update_wiki_page(request_data: WikiPageUpdateRequest):
+    """
+    Updates a single page's content in the cached wiki data.
+    """
+    supported_langs = configs["lang_config"]["supported_languages"]
+    if not supported_langs.__contains__(request_data.language):
+        raise HTTPException(status_code=400, detail="Language is not supported")
+
+    logger.info(f"Updating page {request_data.page_id} in wiki cache for {request_data.owner}/{request_data.repo} ({request_data.repo_type})")
+
+    cached = await read_wiki_cache(request_data.owner, request_data.repo, request_data.repo_type, request_data.language)
+    if not cached:
+        raise HTTPException(status_code=404, detail="Wiki cache not found")
+
+    if request_data.page_id not in cached.generated_pages:
+        raise HTTPException(status_code=404, detail=f"Page '{request_data.page_id}' not found in cached wiki")
+
+    cached.generated_pages[request_data.page_id].content = request_data.content
+
+    cache_request = WikiCacheRequest(
+        repo=RepoInfo(owner=request_data.owner, repo=request_data.repo, type=request_data.repo_type),
+        language=request_data.language,
+        wiki_structure=cached.wiki_structure,
+        generated_pages=cached.generated_pages,
+        provider=cached.provider or "",
+        model=cached.model or "",
+    )
+    success = await save_wiki_cache(cache_request)
+    if success:
+        return {"message": f"Page '{request_data.page_id}' updated successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to save updated wiki cache")
 
 @app.get("/health")
 async def health_check():
