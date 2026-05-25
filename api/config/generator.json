@@ -1,5 +1,5 @@
 {
-  "default_provider": "openrouter",
+  "default_provider": "opencode",
   "providers": {
     "dashscope": {
       "default_model": "qwen-plus",
@@ -165,6 +165,16 @@
         "gpt-4-turbo": {
           "temperature": 0.7,
           "top_p": 0.8
+        }
+      }
+    },
+    "opencode": {
+      "client_class": "OpencodeClient",
+      "default_model": "minimax-m2.7",
+      "supportsCustomModel": true,
+      "models": {
+        "minimax-m2.7": {
+          "temperature": 0.7
         }
       }
     }
