@@ -270,6 +270,9 @@ export default function RepoWikiPage() {
   // Create a flag to track if data was loaded from cache to prevent immediate re-save
   const cacheLoadedSuccessfully = useRef(false);
 
+  // Refresh trigger counter to force data-loading useEffect to re-run on refresh
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   // Create a flag to ensure the effect only runs once
   const effectRan = React.useRef(false);
 
@@ -1678,6 +1681,9 @@ IMPORTANT:
     setStructureRequestInProgress(false); // Assuming this flag should be reset
     setRequestInProgress(false); // Assuming this flag should be reset
 
+    // Increment refreshTrigger to force data-loading useEffect to re-run
+    setRefreshTrigger(prev => prev + 1);
+
     // Explicitly trigger the data loading process again by re-invoking what the main useEffect does.
     // This will first attempt to load from (now hopefully non-existent or soon-to-be-overwritten) server cache,
     // then proceed to fetchRepositoryStructure if needed.
@@ -1686,7 +1692,7 @@ IMPORTANT:
     // For now, we rely on the standard loadData flow initiated by resetting effectRan and dependencies.
     // This will re-trigger the main data loading useEffect.
     // No direct call to fetchRepositoryStructure here, let the useEffect handle it based on effectRan.current = false.
-  }, [effectiveRepoInfo, language, messages.loading, activeContentRequests, selectedProviderState, selectedModelState, isCustomSelectedModelState, customSelectedModelState, modelExcludedDirs, modelExcludedFiles, isComprehensiveView, authCode, authRequired]);
+  }, [effectiveRepoInfo, language, messages.loading, activeContentRequests, selectedProviderState, selectedModelState, isCustomSelectedModelState, customSelectedModelState, modelExcludedDirs, modelExcludedFiles, isComprehensiveView, authCode, authRequired, setRefreshTrigger]);
 
   // Start wiki generation when component mounts
   useEffect(() => {
@@ -1875,7 +1881,7 @@ IMPORTANT:
 
     // Clean up function for this effect is not strictly necessary for loadData,
     // but keeping the main unmount cleanup in the other useEffect
-  }, [effectiveRepoInfo, effectiveRepoInfo.owner, effectiveRepoInfo.repo, effectiveRepoInfo.type, language, fetchRepositoryStructure, messages.loading?.fetchingCache, isComprehensiveView]);
+  }, [effectiveRepoInfo, effectiveRepoInfo.owner, effectiveRepoInfo.repo, effectiveRepoInfo.type, language, fetchRepositoryStructure, messages.loading?.fetchingCache, isComprehensiveView, refreshTrigger]);
 
   // Save wiki to server-side cache when generation is complete
   useEffect(() => {
